@@ -3,66 +3,140 @@ import { config } from './index.js';
 import { logger } from './logger.js';
 
 let redisClient: Redis | null = null;
+let redisEnabled = false;
 
-export async function connectRedis(): Promise<Redis> {
-  if (redisClient) {
-    return redisClient;
+// In-memory cache fallback when Redis is not available
+const memoryCache = new Map<string, { value: string; expiry: number | null }>();
+
+export async function connectRedis(): Promise<void> {
+  // Check if Redis URL is configured
+  if (!config.redisUrl || config.redisUrl === 'redis://localhost:6379' || config.redisUrl === '') {
+    logger.warn('⚠️ Redis URL not configured - using in-memory cache (not recommended for production)');
+    redisEnabled = false;
+    return;
   }
 
-  redisClient = new Redis(config.redisUrl, {
-    maxRetriesPerRequest: 3,
-    retryDelayOnFailover: 100,
-    lazyConnect: true,
-  });
+  try {
+    redisClient = new Redis(config.redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryDelayOnFailover: 100,
+      lazyConnect: true,
+      connectTimeout: 5000,
+    });
 
-  redisClient.on('error', (error) => {
-    logger.error('Redis error:', error);
-  });
+    redisClient.on('error', (error) => {
+      logger.error('Redis error:', error);
+      redisEnabled = false;
+    });
 
-  redisClient.on('connect', () => {
-    logger.debug('Redis connected');
-  });
+    redisClient.on('connect', () => {
+      logger.debug('Redis connected');
+      redisEnabled = true;
+    });
 
-  await redisClient.connect();
+    await redisClient.connect();
+    redisEnabled = true;
+    logger.info('✅ Redis connected successfully');
+  } catch (error) {
+    logger.warn('⚠️ Redis connection failed - using in-memory cache:', error);
+    redisEnabled = false;
+    redisClient = null;
+  }
+}
+
+export function getRedis(): Redis | null {
   return redisClient;
 }
 
-export function getRedis(): Redis {
-  if (!redisClient) {
-    throw new Error('Redis not connected. Call connectRedis() first.');
-  }
-  return redisClient;
+export function isRedisEnabled(): boolean {
+  return redisEnabled;
 }
 
-// Cache helper functions
+// Clean up expired memory cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of memoryCache.entries()) {
+    if (entry.expiry && entry.expiry < now) {
+      memoryCache.delete(key);
+    }
+  }
+}, 60000); // Clean every minute
+
+// Cache helper functions - works with Redis or falls back to memory
 export const cache = {
   async get<T>(key: string): Promise<T | null> {
-    const redis = getRedis();
-    const data = await redis.get(key);
-    if (!data) return null;
-    return JSON.parse(data) as T;
+    try {
+      if (redisEnabled && redisClient) {
+        const data = await redisClient.get(key);
+        if (!data) return null;
+        return JSON.parse(data) as T;
+      } else {
+        // Memory cache fallback
+        const entry = memoryCache.get(key);
+        if (!entry) return null;
+        if (entry.expiry && entry.expiry < Date.now()) {
+          memoryCache.delete(key);
+          return null;
+        }
+        return JSON.parse(entry.value) as T;
+      }
+    } catch (error) {
+      logger.debug('Cache get error:', error);
+      return null;
+    }
   },
 
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
-    const redis = getRedis();
-    const serialized = JSON.stringify(value);
-    if (ttlSeconds) {
-      await redis.setex(key, ttlSeconds, serialized);
-    } else {
-      await redis.set(key, serialized);
+    try {
+      const serialized = JSON.stringify(value);
+      if (redisEnabled && redisClient) {
+        if (ttlSeconds) {
+          await redisClient.setex(key, ttlSeconds, serialized);
+        } else {
+          await redisClient.set(key, serialized);
+        }
+      } else {
+        // Memory cache fallback
+        memoryCache.set(key, {
+          value: serialized,
+          expiry: ttlSeconds ? Date.now() + ttlSeconds * 1000 : null,
+        });
+      }
+    } catch (error) {
+      logger.debug('Cache set error:', error);
     }
   },
 
   async del(key: string): Promise<void> {
-    const redis = getRedis();
-    await redis.del(key);
+    try {
+      if (redisEnabled && redisClient) {
+        await redisClient.del(key);
+      } else {
+        memoryCache.delete(key);
+      }
+    } catch (error) {
+      logger.debug('Cache del error:', error);
+    }
   },
 
   async delPattern(pattern: string): Promise<void> {
-    const redis = getRedis();
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    try {
+      if (redisEnabled && redisClient) {
+        const keys = await redisClient.keys(pattern);
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+        }
+      } else {
+        // Memory cache pattern delete
+        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+        for (const key of memoryCache.keys()) {
+          if (regex.test(key)) {
+            memoryCache.delete(key);
+          }
+        }
+      }
+    } catch (error) {
+      logger.debug('Cache delPattern error:', error);
     }
   },
 

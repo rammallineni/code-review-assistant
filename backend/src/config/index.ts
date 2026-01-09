@@ -10,8 +10,8 @@ const configSchema = z.object({
   // Database
   databaseUrl: z.string().url(),
   
-  // Redis
-  redisUrl: z.string(),
+  // Redis (optional - will use in-memory cache if not provided)
+  redisUrl: z.string().optional().default(''),
   
   // GitHub OAuth
   github: z.object({

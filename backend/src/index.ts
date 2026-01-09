@@ -89,9 +89,9 @@ async function startServer(): Promise<void> {
     await connectDatabase();
     logger.info('✅ Database connected');
 
-    // Connect to Redis
+    // Connect to Redis (optional)
     await connectRedis();
-    logger.info('✅ Redis connected');
+    // Redis connection status is logged inside connectRedis()
 
     // Start server
     app.listen(config.port, () => {

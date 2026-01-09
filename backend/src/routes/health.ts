@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getPool } from '../database/connection.js';
-import { getRedis } from '../config/redis.js';
+import { getRedis, isRedisEnabled } from '../config/redis.js';
 
 const router = Router();
 
@@ -22,8 +22,8 @@ router.get('/', async (_req: Request, res: Response) => {
     status: 'healthy' as 'healthy' | 'unhealthy',
     timestamp: new Date().toISOString(),
     services: {
-      database: { status: 'unknown' as 'up' | 'down' | 'unknown', latency: 0 },
-      redis: { status: 'unknown' as 'up' | 'down' | 'unknown', latency: 0 },
+      database: { status: 'unknown' as 'up' | 'down' | 'unknown' | 'disabled', latency: 0 },
+      redis: { status: 'unknown' as 'up' | 'down' | 'unknown' | 'disabled', latency: 0 },
     },
   };
 
@@ -41,18 +41,24 @@ router.get('/', async (_req: Request, res: Response) => {
     checks.status = 'unhealthy';
   }
 
-  // Check Redis
-  try {
-    const start = Date.now();
-    const redis = getRedis();
-    await redis.ping();
-    checks.services.redis = {
-      status: 'up',
-      latency: Date.now() - start,
-    };
-  } catch {
-    checks.services.redis = { status: 'down', latency: 0 };
-    checks.status = 'unhealthy';
+  // Check Redis (optional)
+  if (isRedisEnabled()) {
+    try {
+      const start = Date.now();
+      const redis = getRedis();
+      if (redis) {
+        await redis.ping();
+        checks.services.redis = {
+          status: 'up',
+          latency: Date.now() - start,
+        };
+      }
+    } catch {
+      checks.services.redis = { status: 'down', latency: 0 };
+      // Don't mark as unhealthy - Redis is optional
+    }
+  } else {
+    checks.services.redis = { status: 'disabled', latency: 0 };
   }
 
   const statusCode = checks.status === 'healthy' ? 200 : 503;
@@ -75,12 +81,15 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/ready', async (_req: Request, res: Response) => {
   try {
     const pool = getPool();
-    const redis = getRedis();
+    await pool.query('SELECT 1');
     
-    await Promise.all([
-      pool.query('SELECT 1'),
-      redis.ping(),
-    ]);
+    // Only check Redis if it's enabled
+    if (isRedisEnabled()) {
+      const redis = getRedis();
+      if (redis) {
+        await redis.ping();
+      }
+    }
 
     res.json({ ready: true });
   } catch {
