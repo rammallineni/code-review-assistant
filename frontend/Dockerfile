@@ -14,8 +14,8 @@ ENV VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use npm install since we may not have package-lock.json)
+RUN npm install
 
 # Copy source code
 COPY . .
