@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-surface min-h-screen;
+    background-image: 
+      radial-gradient(ellipse at top, rgba(0, 145, 195, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(255, 107, 74, 0.05) 0%, transparent 50%);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ocean-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ocean-600;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-ocean-500/30;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-ocean-500 to-ocean-600 text-white
+           hover:from-ocean-400 hover:to-ocean-500
+           focus:ring-ocean-500 shadow-glow;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-tertiary text-ocean-300 border border-ocean-700/50
+           hover:bg-surface-elevated hover:border-ocean-600
+           focus:ring-ocean-600;
+  }
+
+  .btn-danger {
+    @apply btn bg-coral-600 text-white
+           hover:bg-coral-500
+           focus:ring-coral-500;
+  }
+
+  .btn-ghost {
+    @apply btn text-ocean-300 hover:bg-surface-tertiary hover:text-ocean-200
+           focus:ring-ocean-600;
+  }
+
+  .card {
+    @apply bg-surface-secondary/80 backdrop-blur-sm rounded-xl border border-ocean-900/50
+           shadow-lg;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg
+           bg-surface-tertiary border border-ocean-800/50
+           text-white placeholder-ocean-600
+           focus:outline-none focus:border-ocean-500 focus:ring-1 focus:ring-ocean-500
+           transition-colors duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-critical {
+    @apply badge bg-coral-900/50 text-coral-300 border border-coral-700/50;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-900/50 text-amber-300 border border-amber-700/50;
+  }
+
+  .badge-info {
+    @apply badge bg-ocean-900/50 text-ocean-300 border border-ocean-700/50;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-900/50 text-emerald-300 border border-emerald-700/50;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse bg-surface-tertiary rounded;
+  }
+
+  /* Link styles */
+  .link {
+    @apply text-ocean-400 hover:text-ocean-300 underline-offset-4 hover:underline
+           transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-ocean-400 to-coral-400 bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(to right, theme('colors.ocean.500'), theme('colors.coral.500')) 1;
+  }
+
+  /* Animation delay utilities */
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+}
