@@ -1,4 +1,6 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
+import fs from 'fs';
+import path from 'path';
 import { config } from '../config/index.js';
 import { logger } from '../config/logger.js';
 
@@ -25,6 +27,28 @@ export async function connectDatabase(): Promise<Pool> {
   try {
     await client.query('SELECT NOW()');
     logger.debug('Database connection test successful');
+
+    // Apply schema (idempotent: uses IF NOT EXISTS)
+    try {
+      const sqlPath = path.join(process.cwd(), 'src', 'database', 'init.sql');
+      const initSql = fs.readFileSync(sqlPath, 'utf8');
+
+      // Split statements on ';' lines (simple + good enough for this init.sql)
+      const statements = initSql
+        .split(/;\s*$/m)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(s => !s.startsWith('--'));
+
+      for (const stmt of statements) {
+        await client.query(stmt);
+      }
+
+      logger.info('✅ Database schema ensured (init.sql applied)');
+    } catch (e) {
+      logger.error('❌ Failed applying init.sql schema:', e);
+      throw e;
+    }
   } finally {
     client.release();
   }
