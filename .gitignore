@@ -3,6 +3,7 @@ node_modules/
 **/node_modules/
 
 # Environment variables
+scratch.txt
 .env
 .env.local
 .env.*.local
