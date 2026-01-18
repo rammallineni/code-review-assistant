@@ -1,340 +1,225 @@
-# 🔍 AI-Powered Code Review Assistant
+# AI Code Review Assistant
 
-<div align="center">
+A production-grade, AI-powered code review platform that integrates with GitHub to automatically analyze pull requests, detect potential issues, and deliver structured, actionable feedback. Built with a modern full-stack architecture and deployed for real-world use.
 
-![Code Review Assistant](https://img.shields.io/badge/AI-Powered-blue?style=for-the-badge&logo=openai)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-131415?style=for-the-badge&logo=railway&logoColor=white)
-
-**Intelligent code review automation for GitHub pull requests using Claude AI**
-
-[Live Demo](#) • [Documentation](#api-documentation) • [Deploy to Railway](#deployment)
-
-</div>
+**[Live Demo](https://ai-cra.vercel.app)** · **[API Health Check](https://ai-cra-api.onrender.com/health)**
 
 ---
 
-## 🎯 Overview
+## The Problem
 
-AI-Powered Code Review Assistant is a sophisticated tool that automatically analyzes GitHub pull requests and provides intelligent feedback on code quality, security vulnerabilities, and best practices. Leveraging Anthropic's Claude AI, it delivers actionable insights that help developers ship better code faster.
+Manual code reviews are time-consuming and inconsistent. Reviewers often miss edge cases, security vulnerabilities, or style violations—especially under tight deadlines. Teams need a way to augment human review with automated, intelligent analysis that catches issues early and maintains code quality standards.
 
-### ✨ Key Features
+## What This Project Does
 
-- 🔐 **GitHub OAuth Integration** - Seamless authentication with your GitHub account
-- 🤖 **AI-Powered Analysis** - Intelligent code review using Claude AI
-- 🛡️ **Security Scanning** - Detect vulnerabilities, SQL injection, XSS, and more
-- ⚡ **Performance Insights** - Identify memory leaks and inefficient algorithms
-- 📊 **Analytics Dashboard** - Track trends and improvements over time
-- 🔔 **Webhook Support** - Automatic reviews on new pull requests
-- ⚙️ **Customizable Rules** - Configure review preferences per project
-- 📱 **Responsive Design** - Works beautifully on all devices
+AI Code Review Assistant connects to your GitHub repositories and automatically reviews every pull request using Anthropic's Claude API. When a PR is opened or updated, the system:
+
+- Analyzes code changes for bugs, security issues, and anti-patterns
+- Generates structured feedback with severity levels and line-specific comments
+- Posts review comments directly to the GitHub PR
+- Tracks review history and metrics per repository
 
 ---
 
-## 🏗️ Tech Stack
+## Key Features
+
+- **GitHub OAuth Authentication** — Secure login with granular repository permissions
+- **Webhook-Driven Architecture** — Real-time PR detection via GitHub webhooks
+- **AI-Powered Analysis** — Leverages Anthropic Claude for context-aware code review
+- **Structured Feedback** — Categorized issues (bug, security, style, performance) with severity ratings
+- **Repository Management** — Connect/disconnect repos, view review history
+- **Review Dashboard** — Track metrics, filter by status, and drill into individual reviews
+- **Production Deployment** — Fully deployed with CI/CD, environment separation, and monitoring
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
+│                 │         │                  │         │                 │
+│  GitHub.com     │────────▶│  Backend API     │────────▶│  PostgreSQL     │
+│  (Webhooks)     │         │  (Express/Node)  │         │  (Neon)         │
+│                 │◀────────│                  │◀────────│                 │
+└─────────────────┘         └────────┬─────────┘         └─────────────────┘
+                                     │
+                                     │ AI Analysis
+                                     ▼
+                            ┌──────────────────┐
+                            │                  │
+                            │  Anthropic API   │
+                            │  (Claude)        │
+                            │                  │
+                            └──────────────────┘
+
+┌─────────────────┐
+│                 │
+│  React Frontend │─────────▶ Backend API (REST)
+│  (Vercel)       │
+│                 │
+└─────────────────┘
+```
+
+---
+
+## Pull Request Review Workflow
+
+1. **User connects a repository** via the dashboard after GitHub OAuth login
+2. **Webhook is registered** on the repository for `pull_request` events
+3. **PR is opened/updated** on GitHub, triggering a webhook POST to the backend
+4. **Backend fetches the diff** using GitHub's API and the user's access token
+5. **Diff is sent to Anthropic Claude** with a structured prompt for code review
+6. **AI response is parsed** into categorized issues with severity and line numbers
+7. **Review is stored** in PostgreSQL with full metadata
+8. **Comments are posted** back to the GitHub PR via the Checks/Comments API
+9. **Dashboard updates** to reflect the new review status and findings
+
+---
+
+## Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| React 18 | UI Library |
-| TypeScript | Type Safety |
-| Tailwind CSS | Styling |
-| Vite | Build Tool |
-| React Query | Data Fetching |
-| Zustand | State Management |
-| Framer Motion | Animations |
-| Recharts | Data Visualization |
+- React 18 with TypeScript
+- Vite for build tooling
+- React Router for navigation
+- TanStack Query for data fetching
+- Tailwind CSS for styling
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| Node.js | Runtime |
-| Express | Web Framework |
-| TypeScript | Type Safety |
-| PostgreSQL | Primary Database |
-| Redis | Caching Layer |
-| JWT | Authentication |
-
-### AI & Integrations
-| Technology | Purpose |
-|------------|---------|
-| Anthropic Claude | AI Analysis |
-| GitHub API | Repository Integration |
-| OAuth 2.0 | Authentication |
+- Node.js with TypeScript
+- Express.js REST API
+- Prisma ORM for database access
+- GitHub OAuth (Passport.js)
+- Anthropic SDK for AI integration
 
 ### Infrastructure
-| Technology | Purpose |
-|------------|---------|
-| Railway | Cloud Deployment |
-| Docker | Containerization |
-| Nginx | Static File Serving |
+- **Frontend Hosting:** Vercel
+- **Backend Hosting:** Render
+- **Database:** Neon (Serverless PostgreSQL)
+- **Version Control:** GitHub
+- **Secrets Management:** Environment variables per platform
 
 ---
 
-## 🖼️ Screenshots
+## Database Schema
 
-<div align="center">
-
-### Landing Page
-*Beautiful, modern landing page with clear value proposition*
-
-![Landing Page](screenshots/landing.png)
-
-### Dashboard
-*Comprehensive overview of your code review activity*
-
-![Dashboard](screenshots/dashboard.png)
-
-### Review Details
-*Detailed issue breakdown with actionable suggestions*
-
-![Review Details](screenshots/review-detail.png)
-
-### Analytics
-*Track trends and improvements over time*
-
-![Analytics](screenshots/analytics.png)
-
-</div>
-
-> 📸 *Screenshots coming soon - the application is fully functional!*
+| Table | Purpose |
+|-------|---------|
+| `users` | Stores GitHub user info, OAuth tokens, and preferences |
+| `repositories` | Tracks connected repos and webhook registration status |
+| `reviews` | Contains review metadata, status, and aggregated metrics |
+| `review_comments` | Individual findings with severity, category, and line references |
+| `webhook_events` | Logs incoming webhook payloads for debugging and replay |
 
 ---
 
-## 🚀 Quick Start
+## Example API Endpoints
+
+```
+Authentication
+  GET   /auth/github          → Initiates GitHub OAuth flow
+  GET   /auth/github/callback → Handles OAuth callback
+  POST  /auth/logout          → Clears session
+
+Repositories
+  GET   /api/repositories           → List connected repositories
+  POST  /api/repositories/:id/connect    → Register webhook and enable reviews
+  DELETE /api/repositories/:id/disconnect → Remove webhook
+
+Reviews
+  GET   /api/reviews              → List reviews with filters
+  GET   /api/reviews/:id          → Get review details with comments
+
+Webhooks
+  POST  /webhooks/github          → Receives GitHub webhook events
+```
+
+---
+
+## Local Development Setup
 
 ### Prerequisites
+- Node.js 18+
+- PostgreSQL (or Neon connection string)
+- GitHub OAuth App credentials
+- Anthropic API key
 
-- **Node.js** 18.0 or higher
-- **npm** or **yarn**
-- **GitHub Account** (for OAuth)
-- **Anthropic API Key** ([Get one here](https://console.anthropic.com/))
-- **Docker** (optional, for local databases)
-
-### Local Development Setup
-
-#### 1. Clone the Repository
+### Installation
 
 ```bash
-git clone https://github.com/rammallineni/ai-code-review-assistant.git
-cd ai-code-review-assistant
+# Clone the repository
+git clone https://github.com/yourusername/ai-cra.git
+cd ai-cra
+
+# Install dependencies
+cd backend && npm install
+cd ../frontend && npm install
+
+# Set up environment variables (see below)
+cp .env.example .env
+
+# Run database migrations
+cd backend && npx prisma migrate dev
+
+# Start development servers
+npm run dev  # In both /backend and /frontend
 ```
 
-#### 2. Install Dependencies
+---
 
-```bash
-# Install backend dependencies
-cd backend
-npm install
+## Environment Variables
 
-# Install frontend dependencies
-cd ../frontend
-npm install
+### Backend
+```
+DATABASE_URL
+GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET
+GITHUB_WEBHOOK_SECRET
+ANTHROPIC_API_KEY
+SESSION_SECRET
+FRONTEND_URL
 ```
 
-#### 3. Configure Environment Variables
-
-```bash
-# Backend configuration
-cp backend/env.example backend/.env
-
-# Frontend configuration
-cp frontend/env.example frontend/.env
+### Frontend
+```
+VITE_API_URL
+VITE_GITHUB_CLIENT_ID
 ```
 
-Edit the `.env` files with your credentials:
+---
 
-**Backend `.env`:**
-```env
-NODE_ENV=development
-PORT=4000
-DATABASE_URL=postgresql://user:password@localhost:5432/code_review
-REDIS_URL=redis://localhost:6379
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=http://localhost:4000/api/auth/github/callback
-ANTHROPIC_API_KEY=your_anthropic_api_key
-JWT_SECRET=your_jwt_secret
-ENCRYPTION_KEY=your_encryption_key
-FRONTEND_URL=http://localhost:3000
-```
+## Why This Project Is Technically Interesting
 
-**Frontend `.env`:**
-```env
-VITE_API_URL=http://localhost:4000
-VITE_GITHUB_CLIENT_ID=your_github_client_id
-```
+**OAuth with Webhooks** — Implements the full GitHub OAuth flow with token refresh, then uses those tokens to dynamically register webhooks on user repositories. This requires careful handling of permissions, token storage, and webhook signature verification.
 
-#### 4. Start Local Databases (Docker)
+**Event-Driven Architecture** — The webhook handler decouples event ingestion from processing. Incoming events are validated, logged, and queued for async analysis, allowing the system to handle bursts of PR activity without blocking.
 
-```bash
-docker-compose up -d postgres redis
-```
+**Structured AI Prompting** — The Anthropic integration uses carefully designed prompts that produce consistent, parseable output. The system extracts severity, category, line numbers, and suggested fixes from raw AI responses.
 
-#### 5. Run Development Servers
+**Production Hardening** — Includes rate limiting, error boundaries, graceful degradation when AI is unavailable, and comprehensive logging. The database schema supports idempotent webhook processing to handle GitHub's retry behavior.
 
-```bash
-# Terminal 1 - Backend
-cd backend
-npm run dev
-
-# Terminal 2 - Frontend
-cd frontend
-npm run dev
-```
-
-#### 6. Access the Application
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:4000
-- **API Documentation:** http://localhost:4000/api/docs
+**Full Deployment Pipeline** — Separate staging and production environments with environment-specific configurations. Frontend deploys automatically on Vercel; backend uses Render with health checks.
 
 ---
 
-## 🌐 Deployment
+## Future Improvements
 
-### Deploy to Railway
-
-This project is optimized for Railway deployment. See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ai-code-review)
-
-### Quick Railway Setup
-
-1. Create a new Railway project
-2. Add PostgreSQL and Redis services
-3. Deploy backend from `backend/` directory
-4. Deploy frontend from `frontend/` directory
-5. Configure environment variables
-6. Update GitHub OAuth callback URL
+- **Batch Review Mode** — Analyze multiple PRs in a single request for org-wide audits
+- **Custom Review Rules** — Allow users to define project-specific patterns to flag
+- **Review Templates** — Pre-configured prompts for different review styles (security-focused, performance-focused)
+- **Metrics Dashboard** — Track review trends, common issues, and team velocity over time
+- **Slack/Discord Notifications** — Alert channels when reviews complete or critical issues are found
+- **Self-Hosted Option** — Docker Compose setup for teams that can't use external services
 
 ---
 
-## 📚 API Documentation
+## Author
 
-### Authentication
+Built by **[Your Name]**
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/github` | GET | Initiate GitHub OAuth |
-| `/api/auth/github/callback` | GET | OAuth callback |
-| `/api/auth/me` | GET | Get current user |
-| `/api/auth/logout` | POST | Logout |
-
-### Repositories
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/repositories` | GET | List connected repos |
-| `/api/repositories/github` | GET | List GitHub repos |
-| `/api/repositories/connect` | POST | Connect a repo |
-| `/api/repositories/:id` | GET | Get repo details |
-| `/api/repositories/:id` | PATCH | Update repo settings |
-| `/api/repositories/:id` | DELETE | Disconnect repo |
-
-### Reviews
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/reviews` | GET | List reviews |
-| `/api/reviews` | POST | Create new review |
-| `/api/reviews/:id` | GET | Get review details |
-| `/api/reviews/:id/issues` | GET | Get review issues |
-| `/api/reviews/issues/:id/resolve` | POST | Mark issue resolved |
-
-### Analytics
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/analytics/dashboard` | GET | Full dashboard data |
-| `/api/analytics/overview` | GET | Overview stats |
-| `/api/analytics/timeline` | GET | Review timeline |
-| `/api/analytics/categories` | GET | Issue categories |
-
-Full API documentation available at `/api/docs` when running the backend.
+- GitHub: [github.com/yourusername](https://github.com/yourusername)
+- LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
 
 ---
 
-## 🔧 Configuration
-
-### Review Categories
-
-| Category | Description |
-|----------|-------------|
-| Security | SQL injection, XSS, sensitive data exposure |
-| Performance | Memory leaks, inefficient algorithms |
-| Style | Code formatting, naming conventions |
-| Bugs | Logic errors, potential runtime issues |
-| Best Practices | Design patterns, error handling |
-
-### Severity Levels
-
-| Level | Description |
-|-------|-------------|
-| Critical | Must fix before merge |
-| Warning | Should be addressed |
-| Info | Suggestions for improvement |
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Commit your changes**
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-4. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **Open a Pull Request**
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**rammallineni**
-
-- GitHub: [@rammallineni](https://github.com/rammallineni)
-
----
-
-## 🙏 Acknowledgments
-
-- [Anthropic](https://www.anthropic.com/) for the Claude AI API
-- [GitHub](https://github.com/) for the OAuth and repository APIs
-- [Railway](https://railway.app/) for seamless cloud deployment
-- [Tailwind CSS](https://tailwindcss.com/) for the beautiful styling utilities
-- [Lucide Icons](https://lucide.dev/) for the icon library
-
----
-
-<div align="center">
-
-**⭐ Star this repo if you find it helpful!**
-
-Made with ❤️ by [rammallineni](https://github.com/rammallineni)
-
-</div>
+*This project demonstrates full-stack development, third-party API integration, and production deployment practices. It is actively maintained and open to feedback.*
