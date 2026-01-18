@@ -7,8 +7,8 @@ const configSchema = z.object({
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
   port: z.coerce.number().default(4000),
   
-  // Database
-  databaseUrl: z.string().url(),
+  // Database (postgres:// URLs don't pass strict URL validation)
+  databaseUrl: z.string().min(1),
   
   // Redis (optional - will use in-memory cache if not provided)
   redisUrl: z.string().optional().default(''),
