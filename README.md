@@ -2,7 +2,7 @@
 
 A production-grade, AI-powered code review platform that integrates with GitHub to automatically analyze pull requests, detect potential issues, and deliver structured, actionable feedback. Built with a modern full-stack architecture and deployed for real-world use.
 
-**[Live Demo](https://ai-cra.vercel.app)** · **[API Health Check](https://ai-cra-api.onrender.com/health)**
+**[Live Demo](https://code-review-assistant-green.vercel.app/)** · **[API Health Check](https://code-review-assistant-backend-x2zz.onrender.com/api/health)**
 
 ---
 
@@ -148,8 +148,8 @@ Webhooks
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-cra.git
-cd ai-cra
+git clone https://github.com/rammallineni/code-review-assistant.git
+cd code-review-assistant
 
 # Install dependencies
 cd backend && npm install
@@ -215,10 +215,10 @@ VITE_GITHUB_CLIENT_ID
 
 ## Author
 
-Built by **[Your Name]**
+Built by ** Ram Mallineni**
 
-- GitHub: [github.com/yourusername](https://github.com/yourusername)
-- LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
+- GitHub: [github.com/rammallineni](https://github.com/rammallineni)
+- LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com/in/ram-mallineni)
 
 ---
 
