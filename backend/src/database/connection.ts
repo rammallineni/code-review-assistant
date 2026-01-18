@@ -2,7 +2,10 @@ import { Pool, PoolClient, QueryResult } from 'pg';
 import { config } from '../config/index.js';
 import { logger } from '../config/logger.js';
 
-// Embedded schema SQL (so it works after tsup bundling)
+/**
+ * Embedded schema SQL
+ * (Bundled via tsup so it works on Render / prod)
+ */
 const INIT_SQL = `
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -51,7 +54,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     pr_author VARCHAR(255),
     head_sha VARCHAR(40),
     base_sha VARCHAR(40),
-    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'failed')),
+    status VARCHAR(50) DEFAULT 'pending'
+      CHECK (status IN ('pending', 'in_progress', 'completed', 'failed')),
     summary TEXT,
     total_issues INTEGER DEFAULT 0,
     critical_count INTEGER DEFAULT 0,
@@ -73,8 +77,10 @@ CREATE TABLE IF NOT EXISTS issues (
     file_path VARCHAR(1024) NOT NULL,
     line_start INTEGER,
     line_end INTEGER,
-    severity VARCHAR(50) NOT NULL CHECK (severity IN ('critical', 'warning', 'info')),
-    category VARCHAR(100) NOT NULL CHECK (category IN ('security', 'performance', 'style', 'bug', 'best_practice', 'other')),
+    severity VARCHAR(50) NOT NULL
+      CHECK (severity IN ('critical', 'warning', 'info')),
+    category VARCHAR(100) NOT NULL
+      CHECK (category IN ('security', 'performance', 'style', 'bug', 'best_practice', 'other')),
     title VARCHAR(512) NOT NULL,
     description TEXT NOT NULL,
     suggestion TEXT,
@@ -129,16 +135,15 @@ CREATE INDEX IF NOT EXISTS idx_settings_repository_id ON settings(repository_id)
 CREATE INDEX IF NOT EXISTS idx_webhook_events_repository_id ON webhook_events(repository_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_events_processed ON webhook_events(processed);
 
--- Update timestamp trigger function
+-- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Apply triggers
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
@@ -157,10 +162,11 @@ CREATE TRIGGER update_settings_updated_at
 
 let pool: Pool | null = null;
 
+/**
+ * Connect to DB and ensure schema exists
+ */
 export async function connectDatabase(): Promise<Pool> {
-  if (pool) {
-    return pool;
-  }
+  if (pool) return pool;
 
   pool = new Pool({
     connectionString: config.databaseUrl,
@@ -173,30 +179,30 @@ export async function connectDatabase(): Promise<Pool> {
     logger.error('Unexpected database error:', error);
   });
 
-  // Test the connection
   const client = await pool.connect();
   try {
-    await client.query('SELECT NOW()');
+    await client.query('SELECT 1');
     logger.debug('Database connection test successful');
 
-    // Apply schema (idempotent: uses IF NOT EXISTS)
-    try {
-      // Split statements on ';' lines (simple + good enough for this init.sql)
-      const statements = INIT_SQL
-        .split(/;\s*$/m)
-        .map(s => s.trim())
-        .filter(Boolean)
-        .filter(s => !s.startsWith('--'));
+    // 🔑 FIX: remove comment lines BEFORE splitting statements
+    const sqlNoComments = INIT_SQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n');
 
-      for (const stmt of statements) {
-        await client.query(stmt);
-      }
+    const statements = sqlNoComments
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(Boolean);
 
-      logger.info('✅ Database schema ensured');
-    } catch (e) {
-      logger.error('❌ Failed applying schema:', e);
-      throw e;
+    for (const stmt of statements) {
+      await client.query(stmt);
     }
+
+    logger.info('✅ Database schema ensured');
+  } catch (err) {
+    logger.error('❌ Failed initializing database schema:', err);
+    throw err;
   } finally {
     client.release();
   }
@@ -204,6 +210,9 @@ export async function connectDatabase(): Promise<Pool> {
   return pool;
 }
 
+/**
+ * Get pool (after connectDatabase)
+ */
 export function getPool(): Pool {
   if (!pool) {
     throw new Error('Database not connected. Call connectDatabase() first.');
@@ -211,6 +220,9 @@ export function getPool(): Pool {
   return pool;
 }
 
+/**
+ * Query helper
+ */
 export async function query<T>(
   text: string,
   params?: unknown[]
@@ -219,36 +231,41 @@ export async function query<T>(
   const start = Date.now();
   const result = await pool.query<T>(text, params);
   const duration = Date.now() - start;
-  
-  logger.debug(`Query executed in ${duration}ms: ${text.substring(0, 100)}...`);
-  
+
+  logger.debug(`Query executed in ${duration}ms`);
   return result;
 }
 
+/**
+ * Get raw client
+ */
 export async function getClient(): Promise<PoolClient> {
-  const pool = getPool();
-  return pool.connect();
+  return getPool().connect();
 }
 
-// Transaction helper
+/**
+ * Transaction helper
+ */
 export async function withTransaction<T>(
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
   const client = await getClient();
-  
   try {
     await client.query('BEGIN');
     const result = await callback(client);
     await client.query('COMMIT');
     return result;
-  } catch (error) {
+  } catch (err) {
     await client.query('ROLLBACK');
-    throw error;
+    throw err;
   } finally {
     client.release();
   }
 }
 
+/**
+ * Graceful shutdown
+ */
 export async function closeDatabase(): Promise<void> {
   if (pool) {
     await pool.end();
