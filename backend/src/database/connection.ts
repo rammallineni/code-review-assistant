@@ -184,24 +184,19 @@ export async function connectDatabase(): Promise<Pool> {
     await client.query('SELECT 1');
     logger.debug('Database connection test successful');
 
-    // 🔑 FIX: remove comment lines BEFORE splitting statements
+    // Apply schema (idempotent: uses IF NOT EXISTS)
+    // Strip line comments but keep the SQL structure intact (important for $$ blocks)
     const sqlNoComments = INIT_SQL
       .split('\n')
       .filter(line => !line.trim().startsWith('--'))
       .join('\n');
 
-    const statements = sqlNoComments
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(Boolean);
-
-    for (const stmt of statements) {
-      await client.query(stmt);
-    }
+    // Execute the whole script at once (safe for $$...$$ functions)
+    await client.query(sqlNoComments);
 
     logger.info('✅ Database schema ensured');
-  } catch (err) {
-    logger.error('❌ Failed initializing database schema:', err);
+  } catch (e) {
+    logger.error('❌ Failed applying schema:', e);
     throw err;
   } finally {
     client.release();
